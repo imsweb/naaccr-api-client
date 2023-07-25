@@ -1,0 +1,205 @@
+import java.time.Duration
+
+plugins {
+    id 'java-library'
+    id 'checkstyle'
+    id 'jacoco'
+    id 'com.github.spotbugs' version '5.0.14'
+    id 'maven-publish'
+    id 'signing'
+    id 'io.github.gradle-nexus.publish-plugin' version '1.1.0' // publish to Maven Central
+    id 'com.github.ben-manes.versions' version '0.47.0' // check for out-of-date dependencies (run manually)
+    id 'org.sonatype.gradle.plugins.scan' version '2.6.0' // scan for vulnerabilities
+    id "org.sonarqube" version "4.2.1.3168"// sonarQube analysis
+}
+
+group = 'com.imsweb'
+version = file('VERSION').text.trim()
+description = 'NAACCR API Client.'
+
+println "Starting build using JDK ${Runtime.version().feature()}"
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+dependencies {
+	api 'com.squareup.retrofit2:retrofit:2.9.0'
+    api 'com.squareup.retrofit2:converter-jackson:2.9.0'
+
+    // retrofit will not update these dependencies to fix vulnerabilities
+    api 'com.squareup.okhttp3:okhttp:4.11.0'
+    api 'com.squareup.okio:okio:3.4.0'
+
+    // newer version of dependency to fix vulnerability until converter-jackson is updated
+    api 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// enforce UTF-8, display the compilation warnings
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation' << '-Xlint:rawtypes' << '-Werror'
+}
+
+// the Javadoc was made way too strict in Java 8 and it's not worth the time fixing everything!
+tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// generate javadoc and sources (required by Nexus)
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
+    withJavadocJar()
+    withSourcesJar()
+}
+
+// customize the manifest
+jar {
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'Information Management Services Inc.',
+                'Created-By': System.properties['java.vm.version'] + ' (' + System.properties['java.vm.vendor'] + ')',
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': new Date(),
+                'Built-JDK': System.getProperty('java.version'),
+                'Automatic-Module-Name': 'com.imsweb.naaccr.api.client'
+        )
+    }
+}
+
+// Nexus vulnerability scan (https://github.com/sonatype-nexus-community/scan-gradle-plugin)
+ossIndexAudit {
+    outputFormat = 'DEPENDENCY_GRAPH'
+    printBanner = false
+}
+check.dependsOn 'ossIndexAudit'
+
+// checkstyle plugin settings
+checkstyle {
+    ignoreFailures = true
+    configFile = project(':').file('config/checkstyle/checkstyle.xml')
+    configProperties = ['suppressionFile': project(':').file('config/checkstyle/suppressions.xml')]
+}
+
+// jacoco plugin settings
+jacocoTestReport {
+    reports {
+        xml.required = true
+    }
+}
+test.finalizedBy jacocoTestReport
+
+// spotbugs plugin settings
+spotbugs {
+    ignoreFailures = true
+    excludeFilter = project(':').file("config/spotbugs/spotbugs-exclude.xml")
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "imsweb_naaccr_api_client"
+        property "sonar.organization", "imsweb"
+        property "sonar.host.url", "https://sonarcloud.io"
+        property 'sonar.exclusions', '**/lab/*'
+        property 'sonar.coverage.exclusions', '**/lab/*'
+    }
+}
+
+// needed to deploy to Maven Central
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'naaccr-api-client'
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'NAACCR API Client'
+                description = 'Wraps calls to the NAACCR API.'
+                url = 'https://github.com/imsweb/naaccr-api-client'
+                inceptionYear = '2023'
+
+                licenses {
+                    license {
+                        name = 'A modified BSD License (BSD)'
+                        url = 'https://github.com/imsweb/layout/blob/master/LICENSE'
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'depryf'
+                        name = 'Fabian Depry'
+                        email = 'depryf@imsweb.com'
+                    }
+                }
+
+                scm {
+                    url = 'https://github.com/imsweb/naaccr-api-client'
+                    connection = 'scm:https://github.com/imsweb/naaccr-api-client.git'
+                    developerConnection = 'scm:git@github.com:imsweb/naaccr-api-client.git'
+                }
+            }
+        }
+    }
+}
+
+// setup JAR signing
+signing {
+    def signingKey = project.findProperty('signing.armored.key') ?: ''
+    def signingPassword = project.findProperty('signing.armored.password') ?: ''
+
+    useInMemoryPgpKeys(signingKey, signingPassword)
+
+    sign publishing.publications.mavenJava
+}
+
+// needed to release on maven central
+nexusPublishing {
+    repositories {
+        sonatype {
+            stagingProfileId = '63e5ddd3ab0d16'
+
+            username = project.findProperty("nexusUsername")
+            password = project.findProperty("nexusPassword")
+        }
+    }
+
+    clientTimeout = Duration.ofSeconds(300)
+    connectTimeout = Duration.ofSeconds(60)
+
+    transitionCheckOptions {
+        maxRetries.set(50)
+        delayBetween.set(Duration.ofMillis(5000))
+    }
+}
+
+// don't try to release a snapshot to a non-snapshot repository, that won't work anyway
+if (version.endsWith('-SNAPSHOT')) {
+    gradle.startParameter.excludedTaskNames += 'signMavenJavaPublication'
+    gradle.startParameter.excludedTaskNames += 'closeAndReleaseSonatypeStagingRepository'
+}
+
+// Gradle wrapper, this allows to build the project without having to install Gradle!
+wrapper {
+    gradleVersion = '8.2.1'
+    distributionType = Wrapper.DistributionType.ALL
+}
+
+
