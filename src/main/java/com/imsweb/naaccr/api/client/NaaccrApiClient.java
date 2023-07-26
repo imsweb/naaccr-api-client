@@ -6,33 +6,82 @@ package com.imsweb.naaccr.api.client;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
+import com.imsweb.naaccr.api.client.entity.SearchResults;
+
 public class NaaccrApiClient {
 
-    private final NaaccrApiService service;
+    // default base URL
+    public static final String NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
+
+    // default API version
+    public static final String NAACCR_API_VERSION = "1.0";
+
+    // constants for the NAACCR versions
+    public static final String NAACCR_23 = "23";
+
+    // cached instance
+    private static NaaccrApiClient _INSTANCE;
+
+    /**
+     * Returns an instance of the client.
+     * @return a NAACCR API client
+     */
+    public static NaaccrApiClient getInstance() {
+        if (_INSTANCE == null)
+            _INSTANCE = new Builder().connect();
+        return _INSTANCE;
+    }
+
+    /**
+     * Returns the internal object mapper.
+     * @return the internal object mapper
+     */
+    static ObjectMapper getMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        // do not fail for unknown fields
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // do not write null values
+        mapper.setSerializationInclusion(Include.NON_NULL);
+
+        // annotations are set on the fields (not the getters/setters)
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+        // set date format
+        mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+
+        return mapper;
+    }
+
+    private final NaaccrApiService _service;
 
     /**
      * Creates a client API root object
      * @param baseUrl base URL for API
      */
     private NaaccrApiClient(String baseUrl, String apiVersion) {
+
         if (!baseUrl.endsWith("/"))
             baseUrl += "/";
-
         baseUrl += apiVersion + "/";
 
         OkHttpClient client = new OkHttpClient.Builder()
@@ -47,7 +96,7 @@ public class NaaccrApiClient {
 
                     return chain.proceed(request);
                 })
-                //.addInterceptor(new ErrorInterceptor())  TODO FD
+                .addInterceptor(new ErrorInterceptor())
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -57,45 +106,58 @@ public class NaaccrApiClient {
                 .build();
 
         // create cached service entities
-        service = retrofit.create(NaaccrApiService.class);
+        _service = retrofit.create(NaaccrApiService.class);
     }
 
     /**
-     * Returns the internal object mapper.
-     * @return the internal object mapper
+     * Returns the requested data item.
+     * @param naaccrVersion NAACCR version
+     * @param xmlId data item XML ID
+     * @return the requested data item
+     * @throws IOException if the call could not complete successfully
      */
-    static ObjectMapper getMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-
-        // do not write null values
-        mapper.setSerializationInclusion(Include.NON_NULL);
-
-        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        // set Date objects to output in readable customized format
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        mapper.setDateFormat(dateFormat);
-
-        return mapper;
+    public NaaccrDataItem getDataItem(String naaccrVersion, String xmlId) throws IOException {
+        return _service.getDataItem(naaccrVersion, xmlId).execute().body();
     }
 
-    public NaaccrApiService getService() {
-        return service;
+    public List<NaaccrDataItem> getDataItems(String naaccrVersion) throws IOException {
+        List<NaaccrDataItem> items = new ArrayList<>();
+
+        long start = System.currentTimeMillis();
+        System.out.println("Call #1");
+        SearchResults results = _service.getDataItems(naaccrVersion, null, null).execute().body();
+        if (results == null)
+            throw new IOException("Got no results");
+        if (results.getResults() != null && !results.getResults().isEmpty()) {
+            System.out.println(" > " + results.getResults().get(0).getItemName() + " (" + results.getResults().size() + " items in " + (System.currentTimeMillis() - start) + "ms)");
+            items.addAll(results.getResults());
+        }
+        if (results.getCount() == null)
+            throw new IOException("Was expecting a count in the results but didn't get it");
+        int count = results.getCount();
+        int page = 2;
+        while (items.size() < count) {
+            System.out.println("Call #" + (page));
+            start = System.currentTimeMillis();
+            results = _service.getDataItems(naaccrVersion, null, page++).execute().body();
+            if (results == null || results.getResults() == null || results.getResults().isEmpty())
+                break;
+            System.out.println(" > " + results.getResults().get(0).getItemName() + " (" + results.getResults().size() + " items in " + (System.currentTimeMillis() - start) + "ms)");
+            items.addAll(results.getResults());
+        }
+
+        return items;
     }
 
+    //    public List<NaaccrDataItem> searchDataItems(String naaccrVersion, String search) throws IOException {
+    //        return _service.getDataItems(naaccrVersion, search).execute().body();
+    //    }
 
     public static class Builder {
 
-        // default base URL
-        private static final String _NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
+        private String _url;
 
-        private static final String _NAACCR_API_VERSION = "1.0";
-
-        private String url;
-
-        private String version;
+        private String _version;
 
         /**
          * Return a list of user properties from the local .naaccr-api-client file
@@ -125,31 +187,31 @@ public class NaaccrApiClient {
             Properties props = getProperties();
 
             // if the URL is specified (either in properties file or environment), use it, otherwise use the default
-            url = props.getProperty("url");
-            if (url == null)
-                url = System.getenv("NAACCR_API_CLIENT_URL");
-            if (url == null)
-                url = _NAACCR_API_URL;
+            _url = props.getProperty("url");
+            if (_url == null)
+                _url = System.getenv("NAACCR_API_CLIENT_URL");
+            if (_url == null)
+                _url = NAACCR_API_URL;
 
-            version = props.getProperty("version");
-            if (version == null)
-                version = System.getenv("NAACCR_API_CLIENT_VERSION");
-            if (version == null)
-                version = _NAACCR_API_VERSION;
+            _version = props.getProperty("version");
+            if (_version == null)
+                _version = System.getenv("NAACCR_API_CLIENT_VERSION");
+            if (_version == null)
+                _version = NAACCR_API_VERSION;
         }
 
         public Builder url(String url) {
-            this.url = url;
+            _url = url;
             return this;
         }
 
         public Builder version(String version) {
-            this.version = version;
+            _version = version;
             return this;
         }
 
         public NaaccrApiClient connect() {
-            return new NaaccrApiClient(url, version);
+            return new NaaccrApiClient(_url, _version);
         }
     }
 
