@@ -23,6 +23,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
+import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
 import com.imsweb.naaccr.api.client.entity.SearchResults;
 
 public class NaaccrApiClient {
@@ -107,6 +108,10 @@ public class NaaccrApiClient {
 
         // create cached service entities
         _service = retrofit.create(NaaccrApiService.class);
+    }
+
+    public List<NaaccrVersion> getNaaccrVersions() throws IOException {
+        return _service.getNaaccrVersions().execute().body();
     }
 
     /**
