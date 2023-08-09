@@ -8,8 +8,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -22,6 +26,8 @@ import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import com.imsweb.naaccr.api.client.entity.ItemHistory;
+import com.imsweb.naaccr.api.client.entity.ItemHistoryResults;
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
 import com.imsweb.naaccr.api.client.entity.SearchResults;
@@ -35,7 +41,52 @@ public class NaaccrApiClient {
     public static final String NAACCR_API_VERSION = "1.0";
 
     // constants for the NAACCR versions
+    public static final String NAACCR_24 = "24";
     public static final String NAACCR_23 = "23";
+    public static final String NAACCR_22 = "22";
+    public static final String NAACCR_21 = "21";
+
+    // list of all the supported NAACCR versions
+    public static final List<String> NAACCR_VERSIONS = Arrays.asList(NAACCR_24, NAACCR_23, NAACCR_22, NAACCR_21);
+
+    public enum NaaccrItemAttribute {
+        ITEM_NAME("ItemName"),
+        ITEM_LENGTH("ItemLength");
+        // TODO FD add other attributes
+
+        //        ItemName
+        //                ItemLength
+        //        ImplementedYear
+        //                ImplementedVersion
+        //        RetiredYear
+        //                Section
+        //        SourceOfStandard
+        //                DateCreated
+        //        DateModified
+        //                Description
+        //        Rationale
+        //                Clarification
+        //        GeneralNotes
+        //                CollectionStatusNpcr
+        //        CollectionStatusCoc
+        //                CollectionStatusSeer
+        //        CollectionStatusCccr
+        //                Format
+        //        CodeHeading
+        //                CodeNote
+        //        ItemDataType
+        //                AllowableValues
+
+        private final String _name;
+
+        NaaccrItemAttribute(String name) {
+            _name = name;
+        }
+
+        public String getName() {
+            return _name;
+        }
+    }
 
     // cached instance
     private static NaaccrApiClient _INSTANCE;
@@ -111,7 +162,10 @@ public class NaaccrApiClient {
     }
 
     public List<NaaccrVersion> getNaaccrVersions() throws IOException {
-        return _service.getNaaccrVersions().execute().body();
+        List<NaaccrVersion> results = _service.getNaaccrVersions().execute().body();
+        if (results == null)
+            throw new IOException("Unable to get versions, got null results");
+        return results.stream().sorted(Comparator.comparing(NaaccrVersion::getVersion)).collect(Collectors.toList());
     }
 
     /**
@@ -157,6 +211,13 @@ public class NaaccrApiClient {
     //    public List<NaaccrDataItem> searchDataItems(String naaccrVersion, String search) throws IOException {
     //        return _service.getDataItems(naaccrVersion, search).execute().body();
     //    }
+
+    public List<ItemHistory> getItemHistory(String xmlId, NaaccrItemAttribute attribute) throws IOException {
+        ItemHistoryResults results = _service.getItemHistory(xmlId, attribute.getName()).execute().body();
+        if (results == null)
+            throw new IOException("Unable to get history, got null results");
+        return results.getResults().stream().sorted(Comparator.comparing(ItemHistory::getNaaccrVersion)).collect(Collectors.toList());
+    }
 
     public static class Builder {
 
