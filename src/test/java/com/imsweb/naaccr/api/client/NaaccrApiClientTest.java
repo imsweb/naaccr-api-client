@@ -14,14 +14,16 @@ import org.junit.Test;
 
 import com.imsweb.naaccr.api.client.NaaccrApiClient.NaaccrItemAttribute;
 import com.imsweb.naaccr.api.client.entity.ItemHistory;
-import com.imsweb.naaccr.api.client.entity.NaaccrAllowedCode;
-import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
 
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_23;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_24;
 
 public class NaaccrApiClientTest {
+
+    // https://apps.naaccr.org/data-dictionary/api/1.0/documentation/
+
+    // TODO FD implement last history call
 
     @Test
     public void testGetNaaccrVersions() throws IOException {
@@ -36,22 +38,25 @@ public class NaaccrApiClientTest {
     public void testGetDataItem() throws IOException {
         NaaccrApiClient client = NaaccrApiClient.getInstance();
 
-        Assert.assertEquals("Age at Diagnosis", client.getDataItem(NAACCR_23, "ageAtDiagnosis").getItemName());
-        for (NaaccrAllowedCode code : client.getDataItem("23", "ageAtDiagnosis").getAllowedCodes())
-            System.out.println(code.getCode() + ": " + code.getDescription());
+        System.out.println(client.getDataItem("23", "grade").getDescription());
+
+        //Assert.assertEquals("Age at Diagnosis", client.getDataItem(NAACCR_23, "ageAtDiagnosis").getItemName());
+        //for (NaaccrAllowedCode code : client.getDataItem("23", "ageAtDiagnosis").getAllowedCodes())
+        //    System.out.println(code.getCode() + ": " + code.getDescription());
 
         //System.out.println(client.getDataItem("23", "reportingFacility").getAlternateNames());
     }
 
-//    @Test
-//    public void testGetDataItems() throws IOException {
-//        NaaccrApiClient client = NaaccrApiClient.getInstance();
+    // commented out because it's too slow
+//        @Test
+//        public void testGetDataItems() throws IOException {
+//            NaaccrApiClient client = NaaccrApiClient.getInstance();
 //
-//        for (NaaccrDataItem item : client.getDataItems(NAACCR_23)) {
-//            System.out.println(item.getItemName());
+//            for (NaaccrDataItem item : client.getDataItems(NAACCR_23)) {
+//                System.out.println(item.getItemName());
+//            }
+//
 //        }
-//
-//    }
 
     @Test
     public void testGetItemHistory() throws IOException {

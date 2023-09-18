@@ -4,11 +4,15 @@
 package lab;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -28,30 +32,43 @@ public class NccrDictionaryLab {
         // possible Semantic_Type:  "numeric", "boolean", "string", "lookup_value", "numeric_relation"
 
         String version = "23";
-        List<String> itemsToFetch = Arrays.asList("ageAtDiagnosis", "ajccId", "behaviorIcdO2", "behaviorCodeIcdO3", "brainMolecularMarkers", "breslowTumorThickness", "cocAccreditedFlag",
-                "csExtension", "csLymphNodes", "csLymphNodesEval", "csMetsAtDx", "csMetsEval");
+        //List<String> itemIds = Arrays.asList("ageAtDiagnosis", "ajccId", "behaviorIcdO2", "behaviorCodeIcdO3", "brainMolecularMarkrs", "breslowTumorThickness", "cocAccreditedFlag", "csExtension", "csLymphNodes", "csLymphNodesEval", "csMetsAtDx", "csMetsEval");
+        String[] itemIds = Files.readAllLines(Paths.get("C:\\dev\\temp\\nccr.fields.fld")).get(0).split(",");
+
+        Set<String> itemsToFetch = new TreeSet<>();
+        for (String id : itemIds) {
+            if (id.endsWith("Year") && id.toLowerCase().contains("date"))
+                itemsToFetch.add(id.replace("Year", ""));
+            else if (id.endsWith("Month") && id.toLowerCase().contains("date"))
+                itemsToFetch.add(id.replace("Month", ""));
+            else if (id.endsWith("Day") && id.toLowerCase().contains("date"))
+                itemsToFetch.add(id.replace("Day", ""));
+            else
+                itemsToFetch.add(id);
+        }
 
         // the notes are provided by them, I didn't want to lose them, so I am "re-injecting" them
         Map<String, String> notes = new HashMap<>();
-        notes.put("ajccId",
-                "This data item will be used to create an efficient process for running TNM Edits.Each Site-Specific Data Item (SSDI) applies only to selected primary sites histologies, and years of diagnosis. Depending on applicability and standard-setter requirements, SSDIs may beleft blank.");
-        notes.put("brainMolecularMarkers", "Collection of these clinically important brain cancer subtypes has been recommended by CBTRUS.");
-        notes.put("breslowTumorThickness", "Breslow Tumor Thickness is a Registry Data Collection Variable in AJCC. It was previously collected as Melanoma Skin, CS SSF# 1.");
-        notes.put("cocAccreditedFlag",
-                "CoC-accredited facilities are required to collect certain data items including TNM staging. It is burdensome for central registries to maintain a list of accredited facilities, and the list changes frequently. The flag is a means of incorporating the accredited status into abstracts at the time of abstraction by someone who has knowledge of the status. The flag thus simplifies validating that required items have been abstracted by CoC-accredited facilities. The flag also allows cases to be stratified during analyses to identify those never seen at a CoC-accredited facility; e.g., percentage of all cases seen in at least one CoC-accredited facility, evaluation of outcomes by facility status. NPCR will use this flag for facility status stratification.");
-        notes.put("csExtension", "Tumor extension at diagnosis is a prognostic indicator used by Collaborative Staging to derive some TNM-T codes and some SEER Summary Stage codes.");
-        notes.put("csLymphNodes", "The involvement of specific regional lymph nodes is a prognostic indicator used by Collaborative Staging to derive some TNM-N codes and SEER Summary Stage codes.");
-        notes.put("csLymphNodesEval",
-                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-N code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
-        notes.put("csMetsAtDx",
-                "The presence of metastatic disease at diagnosis is an independent prognostic indicator, and it is used by Collaborative Staging to derive TNM-M codes and SEER Summary Stage codes.");
-        notes.put("csMetsEval",
-                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-M code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
+        //        notes.put("ajccId",
+        //                "This data item will be used to create an efficient process for running TNM Edits.Each Site-Specific Data Item (SSDI) applies only to selected primary sites histologies, and years of diagnosis. Depending on applicability and standard-setter requirements, SSDIs may beleft blank.");
+        //        notes.put("brainMolecularMarkers", "Collection of these clinically important brain cancer subtypes has been recommended by CBTRUS.");
+        //        notes.put("breslowTumorThickness", "Breslow Tumor Thickness is a Registry Data Collection Variable in AJCC. It was previously collected as Melanoma Skin, CS SSF# 1.");
+        //        notes.put("cocAccreditedFlag",
+        //                "CoC-accredited facilities are required to collect certain data items including TNM staging. It is burdensome for central registries to maintain a list of accredited facilities, and the list changes frequently. The flag is a means of incorporating the accredited status into abstracts at the time of abstraction by someone who has knowledge of the status. The flag thus simplifies validating that required items have been abstracted by CoC-accredited facilities. The flag also allows cases to be stratified during analyses to identify those never seen at a CoC-accredited facility; e.g., percentage of all cases seen in at least one CoC-accredited facility, evaluation of outcomes by facility status. NPCR will use this flag for facility status stratification.");
+        //        notes.put("csExtension", "Tumor extension at diagnosis is a prognostic indicator used by Collaborative Staging to derive some TNM-T codes and some SEER Summary Stage codes.");
+        //        notes.put("csLymphNodes", "The involvement of specific regional lymph nodes is a prognostic indicator used by Collaborative Staging to derive some TNM-N codes and SEER Summary Stage codes.");
+        //        notes.put("csLymphNodesEval",
+        //                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-N code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
+        //        notes.put("csMetsAtDx",
+        //                "The presence of metastatic disease at diagnosis is an independent prognostic indicator, and it is used by Collaborative Staging to derive TNM-M codes and SEER Summary Stage codes.");
+        //        notes.put("csMetsEval",
+        //                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-M code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
 
         NccrDictionary dictionary = new NccrDictionary();
         dictionary.setElements(new ArrayList<>());
 
         for (String itemId : itemsToFetch) {
+
             NaaccrDataItem item = client.getDataItem(version, itemId);
 
             NccrDictionaryElement element = new NccrDictionaryElement();
