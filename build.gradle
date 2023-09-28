@@ -39,6 +39,8 @@ dependencies {
     api 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.imsweb:seerutils:5.6'
+    testImplementation 'org.commonmark:commonmark:0.20.0'
 }
 
 // enforce UTF-8, display the compilation warnings

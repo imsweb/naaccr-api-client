@@ -35,7 +35,9 @@ import com.imsweb.naaccr.api.client.entity.SearchResults;
 public class NaaccrApiClient {
 
     // default base URL
-    public static final String NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
+    //public static final String NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
+    public static final String NAACCR_API_URL = "https://www547.dev01.imsweb.com/naaccr_data_dictionary/api/";
+    //public static final String NAACCR_API_URL = "https://www548.imsweb.com/naaccr_data_dictionary/api/";
 
     // default API version
     public static final String NAACCR_API_VERSION = "1.0";
