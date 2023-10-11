@@ -3,6 +3,7 @@
  */
 package com.imsweb.naaccr.api.client.entity;
 
+import java.util.Date;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -15,7 +16,8 @@ public class NaaccrVersion {
     @JsonProperty("YearImplemented")
     private Integer _yearImplemented;
 
-    // TODO FD add date of publication, but it uses a different format, need to discuss this ("DateOfPublication": "2023-04-05 13:09:58.558000")
+    @JsonProperty("DateOfPublication")
+    private Date _dateOfPublication;
 
     public String getVersion() {
         return _version;
@@ -31,6 +33,14 @@ public class NaaccrVersion {
 
     public void setYearImplemented(Integer yearImplemented) {
         _yearImplemented = yearImplemented;
+    }
+
+    public Date getDateOfPublication() {
+        return _dateOfPublication;
+    }
+
+    public void setDateOfPublication(Date dateOfPublication) {
+        _dateOfPublication = dateOfPublication;
     }
 
     @Override

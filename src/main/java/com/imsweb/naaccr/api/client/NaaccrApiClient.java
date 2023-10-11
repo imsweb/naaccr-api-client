@@ -6,12 +6,10 @@ package com.imsweb.naaccr.api.client;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -35,9 +33,7 @@ import com.imsweb.naaccr.api.client.entity.SearchResults;
 public class NaaccrApiClient {
 
     // default base URL
-    //public static final String NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
-    public static final String NAACCR_API_URL = "https://www547.dev01.imsweb.com/naaccr_data_dictionary/api/";
-    //public static final String NAACCR_API_URL = "https://www548.imsweb.com/naaccr_data_dictionary/api/";
+    public static final String NAACCR_API_URL = "https://apps.naaccr.org/data-dictionary/api/";
 
     // default API version
     public static final String NAACCR_API_VERSION = "1.0";
@@ -120,9 +116,6 @@ public class NaaccrApiClient {
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-        // set date format
-        mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
-
         return mapper;
     }
 
@@ -184,13 +177,10 @@ public class NaaccrApiClient {
     public List<NaaccrDataItem> getDataItems(String naaccrVersion) throws IOException {
         List<NaaccrDataItem> items = new ArrayList<>();
 
-        long start = System.currentTimeMillis();
-        System.out.println("Call #1");
         SearchResults results = _service.getDataItems(naaccrVersion, null, null).execute().body();
         if (results == null)
             throw new IOException("Got no results");
         if (results.getResults() != null && !results.getResults().isEmpty()) {
-            System.out.println(" > " + results.getResults().get(0).getItemName() + " (" + results.getResults().size() + " items in " + (System.currentTimeMillis() - start) + "ms)");
             items.addAll(results.getResults());
         }
         if (results.getCount() == null)
@@ -198,12 +188,9 @@ public class NaaccrApiClient {
         int count = results.getCount();
         int page = 2;
         while (items.size() < count) {
-            System.out.println("Call #" + (page));
-            start = System.currentTimeMillis();
             results = _service.getDataItems(naaccrVersion, null, page++).execute().body();
             if (results == null || results.getResults() == null || results.getResults().isEmpty())
                 break;
-            System.out.println(" > " + results.getResults().get(0).getItemName() + " (" + results.getResults().size() + " items in " + (System.currentTimeMillis() - start) + "ms)");
             items.addAll(results.getResults());
         }
 

@@ -3,16 +3,20 @@
  */
 package lab;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -21,6 +25,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.imsweb.naaccr.api.client.NaaccrApiClient;
+import com.imsweb.naaccr.api.client.NaaccrApiException;
 import com.imsweb.naaccr.api.client.entity.NaaccrAllowedCode;
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 
@@ -29,86 +34,162 @@ public class NccrDictionaryLab {
     public static void main(String[] args) throws IOException {
         NaaccrApiClient client = NaaccrApiClient.getInstance();
 
+        File requiredFields = new File("C:\\dev\\temp\\nccr\\nccr.CTC.platform.variables.20230831.csv");
+        File ddFile = new File("C:\\dev\\temp\\nccr\\seer.22reg.yr1973_2020.dd");
+
         // possible Semantic_Type:  "numeric", "boolean", "string", "lookup_value", "numeric_relation"
 
         String version = "23";
-        //List<String> itemIds = Arrays.asList("ageAtDiagnosis", "ajccId", "behaviorIcdO2", "behaviorCodeIcdO3", "brainMolecularMarkrs", "breslowTumorThickness", "cocAccreditedFlag", "csExtension", "csLymphNodes", "csLymphNodesEval", "csMetsAtDx", "csMetsEval");
-        String[] itemIds = Files.readAllLines(Paths.get("C:\\dev\\temp\\nccr.fields.fld")).get(0).split(",");
-
-        Set<String> itemsToFetch = new TreeSet<>();
-        for (String id : itemIds) {
-            if (id.endsWith("Year") && id.toLowerCase().contains("date"))
-                itemsToFetch.add(id.replace("Year", ""));
-            else if (id.endsWith("Month") && id.toLowerCase().contains("date"))
-                itemsToFetch.add(id.replace("Month", ""));
-            else if (id.endsWith("Day") && id.toLowerCase().contains("date"))
-                itemsToFetch.add(id.replace("Day", ""));
-            else
-                itemsToFetch.add(id);
+        Map<String, List<String>> itemIds = new LinkedHashMap<>();
+        try (LineNumberReader reader = new LineNumberReader(new InputStreamReader(new FileInputStream(requiredFields), StandardCharsets.US_ASCII))) {
+            String line = reader.readLine();
+            while (line != null) {
+                List<String> parts = parseCsvLine(reader.getLineNumber(), line);
+                if (parts.size() >= 4 && !parts.get(3).isEmpty() && !"XML NAACCR Id".equalsIgnoreCase(parts.get(3)))
+                    itemIds.put(parts.get(3), parts);
+                line = reader.readLine();
+            }
         }
+        Set<String> itemsToFetch = new LinkedHashSet<>(itemIds.keySet());
 
-        // the notes are provided by them, I didn't want to lose them, so I am "re-injecting" them
-        Map<String, String> notes = new HashMap<>();
-        //        notes.put("ajccId",
-        //                "This data item will be used to create an efficient process for running TNM Edits.Each Site-Specific Data Item (SSDI) applies only to selected primary sites histologies, and years of diagnosis. Depending on applicability and standard-setter requirements, SSDIs may beleft blank.");
-        //        notes.put("brainMolecularMarkers", "Collection of these clinically important brain cancer subtypes has been recommended by CBTRUS.");
-        //        notes.put("breslowTumorThickness", "Breslow Tumor Thickness is a Registry Data Collection Variable in AJCC. It was previously collected as Melanoma Skin, CS SSF# 1.");
-        //        notes.put("cocAccreditedFlag",
-        //                "CoC-accredited facilities are required to collect certain data items including TNM staging. It is burdensome for central registries to maintain a list of accredited facilities, and the list changes frequently. The flag is a means of incorporating the accredited status into abstracts at the time of abstraction by someone who has knowledge of the status. The flag thus simplifies validating that required items have been abstracted by CoC-accredited facilities. The flag also allows cases to be stratified during analyses to identify those never seen at a CoC-accredited facility; e.g., percentage of all cases seen in at least one CoC-accredited facility, evaluation of outcomes by facility status. NPCR will use this flag for facility status stratification.");
-        //        notes.put("csExtension", "Tumor extension at diagnosis is a prognostic indicator used by Collaborative Staging to derive some TNM-T codes and some SEER Summary Stage codes.");
-        //        notes.put("csLymphNodes", "The involvement of specific regional lymph nodes is a prognostic indicator used by Collaborative Staging to derive some TNM-N codes and SEER Summary Stage codes.");
-        //        notes.put("csLymphNodesEval",
-        //                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-N code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
-        //        notes.put("csMetsAtDx",
-        //                "The presence of metastatic disease at diagnosis is an independent prognostic indicator, and it is used by Collaborative Staging to derive TNM-M codes and SEER Summary Stage codes.");
-        //        notes.put("csMetsEval",
-        //                "This data item is used by Collaborative Staging to describe whether the staging basis for the TNM-M code is clinical or pathological and to record applicable prefix and suffix descriptors used with TNM staging.");
+        Map<String, Map<String, String>> ddFileInfo = readDdFile(ddFile);
 
         NccrDictionary dictionary = new NccrDictionary();
         dictionary.setElements(new ArrayList<>());
 
+        List<String> unknown = new ArrayList<>();
         for (String itemId : itemsToFetch) {
+            System.out.println(itemId);
 
-            NaaccrDataItem item = client.getDataItem(version, itemId);
+            List<String> itemInfo = itemIds.get(itemId);
 
-            NccrDictionaryElement element = new NccrDictionaryElement();
-            element.setColumnNameAtSource(item.getXmlNaaccrId());
-            NccrDictionaryDataType dataType = new NccrDictionaryDataType();
-            dataType.setFieldLength(item.getItemLength());
-            if (item.getAllowedCodes() != null && !item.getAllowedCodes().isEmpty())
-                dataType.setSemanticType("lookup_value");
-            else if ("digits".equals(item.getItemDataType()))
-                dataType.setSemanticType("numeric");
-            else
-                dataType.setSemanticType("string");
-            if (item.getSourceOfStandard() != null)
-                dataType.setAbbreviatedSourceVocabulary(item.getSourceOfStandard());
-            element.setColumnDataTypeAtSource(dataType);
-            element.setItemName(item.getItemName());
-            element.setItemId(item.getXmlNaaccrId());
-            element.setItemNumber(item.getItemNumber().toString());
-            element.setInternetLink("https://apps.naaccr.org/data-dictionary/api/1.0/data_item/" + version + "/" + item.getXmlNaaccrId());
-            element.setItemDescription(item.getDescription());
-            element.setRationale(notes.get(itemId));
-
-            if (item.getAllowedCodes() != null) {
-                List<NccrDictionaryElementValue> values = new ArrayList<>();
-                for (NaaccrAllowedCode code : item.getAllowedCodes()) {
-                    if (code.getCode() != null && !code.getCode().isEmpty() && code.getDescription() != null && !code.getDescription().isEmpty()) {
-                        NccrDictionaryElementValue value = new NccrDictionaryElementValue();
-                        value.setValue(code.getCode());
-                        value.setDescription(code.getDescription());
-                        values.add(value);
-                    }
+            NccrDictionaryElement element = null;
+            try {
+                element = createElementFromApi(client.getDataItem(version, itemId), version);
+                System.out.println("  > API");
+            }
+            catch (NaaccrApiException e) {
+                Map<String, String> ddField = ddFileInfo.values().stream()
+                        .filter(m -> itemId.equals(m.get("naaccrId")) || (itemInfo.get(2) != null && itemInfo.get(2).equals(m.get("FieldName"))))
+                        .findFirst()
+                        .orElse(null);
+                if (ddField != null) {
+                    element = createElementFromDdFile(ddField, ddFileInfo.get("Format=" + ddField.get("FieldName")));
+                    System.out.println("  > DD File");
                 }
-                if (!values.isEmpty())
-                    element.setPermissibleValues(values);
+                else {
+                    unknown.add(itemId);
+                    System.out.println(" > !!!! unknown");
+                }
             }
 
-            dictionary.getElements().add(element);
+            if (element != null) {
+                String applicableYears = itemInfo.get(4);
+                if (applicableYears != null && !applicableYears.isEmpty())
+                    element.setRationale("Years Applicable: " + applicableYears);
+                dictionary.getElements().add(element);
+            }
+
         }
 
+        //for (String s : unknown)
+        //    System.out.println(s);
+
         System.out.println(getMapper().writeValueAsString(dictionary));
+    }
+
+    private static Map<String, Map<String, String>> readDdFile(File file) throws IOException {
+        Map<String, Map<String, String>> result = new LinkedHashMap<>();
+
+        boolean inSection = false;
+        Map<String, String> currentSection = null;
+        for (String line : Files.readAllLines(file.toPath())) {
+            if (line.isEmpty())
+                inSection = false;
+            else if (line.startsWith("[") && !inSection) {
+                currentSection = new LinkedHashMap<>();
+                result.put(line.substring(1, line.length() - 1), currentSection);
+                inSection = true;
+            }
+            else if (inSection) {
+                int idx = line.indexOf('=');
+                String value = line.substring(idx + 1);
+                if (value.startsWith("\"") && value.endsWith("\""))
+                    value = value.substring(1, value.length() - 1);
+                currentSection.put(line.substring(0, idx), value);
+            }
+        }
+
+        return result;
+    }
+
+    private static NccrDictionaryElement createElementFromApi(NaaccrDataItem item, String version) {
+        NccrDictionaryElement element = new NccrDictionaryElement();
+        element.setColumnNameAtSource(item.getXmlNaaccrId());
+        NccrDictionaryDataType dataType = new NccrDictionaryDataType();
+        dataType.setFieldLength(item.getItemLength());
+        if (item.getAllowedCodes() != null && !item.getAllowedCodes().isEmpty())
+            dataType.setSemanticType("lookup_value");
+        else if ("digits".equals(item.getItemDataType()))
+            dataType.setSemanticType("numeric");
+        else
+            dataType.setSemanticType("string");
+        if (item.getSourceOfStandard() != null)
+            dataType.setAbbreviatedSourceVocabulary(item.getSourceOfStandard());
+        element.setColumnDataTypeAtSource(dataType);
+        element.setItemName(item.getItemName());
+        element.setItemId(item.getXmlNaaccrId());
+        element.setItemNumber(item.getItemNumber().toString());
+        element.setInternetLink("https://apps.naaccr.org/data-dictionary/api/1.0/data_item/" + version + "/" + item.getXmlNaaccrId());
+        element.setItemDescription(item.getDescription());
+
+        if (item.getAllowedCodes() != null) {
+            List<NccrDictionaryElementValue> values = new ArrayList<>();
+            for (NaaccrAllowedCode code : item.getAllowedCodes()) {
+                if (code.getCode() != null && !code.getCode().isEmpty() && code.getDescription() != null && !code.getDescription().isEmpty()) {
+                    NccrDictionaryElementValue value = new NccrDictionaryElementValue();
+                    value.setValue(code.getCode());
+                    value.setDescription(code.getDescription());
+                    values.add(value);
+                }
+            }
+            if (!values.isEmpty())
+                element.setPermissibleValues(values);
+        }
+
+        return element;
+    }
+
+    private static NccrDictionaryElement createElementFromDdFile(Map<String, String> field, Map<String, String> lookup) {
+        NccrDictionaryElement element = new NccrDictionaryElement();
+        element.setColumnNameAtSource(field.get("naaccrId"));
+        NccrDictionaryDataType dataType = new NccrDictionaryDataType();
+        dataType.setFieldLength(Integer.valueOf(field.get("Length")));
+        if (lookup != null)
+            dataType.setSemanticType("lookup_value");
+        else
+            dataType.setSemanticType("string");
+        dataType.setAbbreviatedSourceVocabulary("SEER Recode");
+        element.setColumnDataTypeAtSource(dataType);
+        element.setItemName(field.get("FieldName"));
+        element.setItemId(field.get("naaccrId"));
+        element.setItemNumber(field.get("NAACCRItemNumber"));
+        element.setInternetLink(null);
+        element.setItemDescription(null);
+
+        if (lookup != null) {
+            List<NccrDictionaryElementValue> values = new ArrayList<>();
+            for (Entry<String, String> entry : lookup.entrySet()) {
+                NccrDictionaryElementValue value = new NccrDictionaryElementValue();
+                value.setValue(entry.getKey());
+                value.setDescription(entry.getValue());
+                values.add(value);
+            }
+            if (!values.isEmpty())
+                element.setPermissibleValues(values);
+        }
+
+        return element;
     }
 
     private static ObjectMapper getMapper() {
@@ -122,6 +203,103 @@ public class NccrDictionaryLab {
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
         return mapper;
+    }
+
+    public static List<String> parseCsvLine(int lineNumber, String line) throws IOException {
+        List<String> result = new ArrayList<>();
+
+        char cQuote = '"';
+        char cDelimiter = ',';
+        int curIndex = 0;
+        int nextQuote;
+        int nextDelimiter;
+
+        StringBuilder buf = new StringBuilder();
+        buf.append(cQuote);
+        String singleQuotes = buf.toString();
+        buf.append(cQuote);
+        String doubleQuotes = buf.toString();
+
+        String value;
+        while (curIndex < line.length()) {
+            if (line.charAt(curIndex) == cQuote) {
+                // handle quoted value
+                nextQuote = getNextSingleQuote(line, cQuote, curIndex);
+                if (nextQuote < 0)
+                    throw new IOException("Line " + lineNumber + ": found an unmatched quote");
+                else {
+                    result.add(line.substring(curIndex + 1, nextQuote).replace(doubleQuotes, singleQuotes));
+                    // update the current index to be after delimiter, after the ending quote
+                    curIndex = nextQuote;
+                    if (curIndex + 1 < line.length()) {
+                        // if there is a next value, set current index to be after delimiter
+                        if (line.charAt(curIndex + 1) == cDelimiter) {
+                            curIndex += 2;
+                            // handle case where last value is empty
+                            if (curIndex == line.length())
+                                result.add("");
+                        }
+                        // else character after ending quote is not EOL and not delimiter, stop parsing
+                        else
+                            throw new IOException("Line " + lineNumber + ": expected a delimiter after the quote");
+                    }
+                    else
+                        // end of line is after ending quote, stop parsing
+                        curIndex++;
+                }
+            }
+            else {
+                // handle unquoted value
+                nextDelimiter = getNextDelimiter(line, cDelimiter, curIndex);
+                value = line.substring(curIndex, nextDelimiter).replace(doubleQuotes, singleQuotes);
+                // unquoted values should not contain any quotes
+                if (value.contains(singleQuotes))
+                    throw new IOException("Line " + lineNumber + ": value contains some quotes but does not start with a quote");
+                else {
+                    result.add(value);
+                    curIndex = nextDelimiter + 1;
+                    // handle case where last value is empty
+                    if (curIndex == line.length())
+                        result.add("");
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static int getNextSingleQuote(String line, char quote, int from) {
+        if (from >= line.length())
+            return -1;
+
+        int index = from + 1;
+        boolean found = false;
+        while ((index < line.length()) && !found) {
+            if (line.charAt(index) != quote)
+                index++;
+            else {
+                if ((index + 1 == line.length()) || (line.charAt(index + 1) != quote))
+                    found = true;
+                else
+                    index += 2;
+            }
+
+        }
+
+        index = (index == line.length()) ? -1 : index;
+
+        return index;
+    }
+
+    private static int getNextDelimiter(String line, char delimiter, int from) {
+        if (from >= line.length())
+            return line.length();
+
+        int index = from;
+        while ((index < line.length()) && (line.charAt(index) != delimiter))
+            index++;
+
+        return index;
     }
 
     public static class NccrDictionary {

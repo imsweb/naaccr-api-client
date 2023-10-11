@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.imsweb.naaccr.api.client.NaaccrApiClient.NaaccrItemAttribute;
 import com.imsweb.naaccr.api.client.entity.ItemHistory;
+import com.imsweb.naaccr.api.client.entity.NaaccrAllowedCode;
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
 
@@ -33,17 +34,29 @@ public class NaaccrApiClientTest {
         Assert.assertTrue(versions.toString(), versions.contains("21"));
         for (String v : versions)
             Assert.assertTrue(v, v.matches("\\d{2}"));
+
+        for (NaaccrVersion v : client.getNaaccrVersions())
+            System.out.println(v.getVersion() + ": " + v.getYearImplemented() + " - " + v.getDateOfPublication());
     }
 
     @Test
     public void testGetDataItem() throws IOException {
         NaaccrApiClient client = NaaccrApiClient.getInstance();
 
-        System.out.println(client.getDataItem("23", "race1").getDescription());
+        System.out.println(client.getDataItem("23", "1030").getItemName());
+        System.out.println(client.getDataItem("23", "1030").getDescription());
+        System.out.println(client.getDataItem("23", "1030").getYearImplemented());
+        System.out.println(client.getDataItem("23", "1030").getVersionImplemented());
+        System.out.println(client.getDataItem("23", "1030").getYearRetired());
+        System.out.println(client.getDataItem("23", "1030").getVersionRetired());
 
-        //Assert.assertEquals("Age at Diagnosis", client.getDataItem(NAACCR_23, "ageAtDiagnosis").getItemName());
-        //for (NaaccrAllowedCode code : client.getDataItem("23", "ageAtDiagnosis").getAllowedCodes())
-        //    System.out.println(code.getCode() + ": " + code.getDescription());
+        System.out.println("*****");
+        System.out.println(client.getDataItem(NAACCR_23, "ageAtDiagnosis").getItemName());
+        Assert.assertEquals("Age at Diagnosis", client.getDataItem(NAACCR_23, "ageAtDiagnosis").getItemName());
+        System.out.println(client.getDataItem("23", "ageAtDiagnosis").getDateCreated());
+        System.out.println(client.getDataItem("23", "ageAtDiagnosis").getDateModified());
+        for (NaaccrAllowedCode code : client.getDataItem("23", "ageAtDiagnosis").getAllowedCodes())
+            System.out.println(code.getCode() + ": " + code.getDescription());
 
         //System.out.println(client.getDataItem("23", "reportingFacility").getAlternateNames());
     }
@@ -53,10 +66,8 @@ public class NaaccrApiClientTest {
     public void testGetDataItems() throws IOException {
         NaaccrApiClient client = NaaccrApiClient.getInstance();
 
-        for (NaaccrDataItem item : client.getDataItems(NAACCR_23)) {
+        for (NaaccrDataItem item : client.getDataItems(NAACCR_23))
             System.out.println(item.getItemName());
-        }
-
     }
 
     @Test
