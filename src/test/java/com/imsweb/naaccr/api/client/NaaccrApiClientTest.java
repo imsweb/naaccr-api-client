@@ -123,6 +123,9 @@ public class NaaccrApiClientTest {
         Assert.assertNull(item.getVersionImplemented());
         Assert.assertEquals(2006, item.getYearRetired().intValue());
         Assert.assertEquals("11", item.getVersionRetired());
+
+        // a bad request
+        Assert.assertThrows(IOException.class, () -> client.getDataItem(NAACCR_LATEST, "unknown"));
     }
 
     @Test
