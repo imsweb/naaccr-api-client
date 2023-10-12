@@ -44,6 +44,9 @@ public class NaaccrApiClient {
     public static final String NAACCR_22 = "22";
     public static final String NAACCR_21 = "21";
 
+    // latest NAACCR version
+    public static final String NAACCR_LATEST = NAACCR_24;
+
     // list of all the supported NAACCR versions
     public static final List<String> NAACCR_VERSIONS = Arrays.asList(NAACCR_24, NAACCR_23, NAACCR_22, NAACCR_21);
 
