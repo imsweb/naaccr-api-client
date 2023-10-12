@@ -10,6 +10,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import com.imsweb.naaccr.api.client.entity.ItemChangelogResults;
 import com.imsweb.naaccr.api.client.entity.ItemHistoryResults;
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
@@ -20,15 +21,16 @@ public interface NaaccrApiService {
     @GET("naaccr_versions")
     Call<List<NaaccrVersion>> getNaaccrVersions();
 
-    @GET("data_item/{naaccrVersion}/{xmlId}")
-    Call<NaaccrDataItem> getDataItem(@Path("naaccrVersion") String naaccrVersion, @Path("xmlId") String xmlId);
-
     @GET("data_item/{naaccrVersion}")
-    Call<SearchResults> getDataItems(@Path("naaccrVersion") String naaccrVersion, @Query("q") String search, @Query("page") Integer page);
+    Call<SearchResults> getDataItems(@Path("naaccrVersion") String naaccrVersion, @Query("page") Integer page);
 
-    // TODO add same call but by number
+    @GET("data_item/{naaccrVersion}/{xmlIdOrNumber}")
+    Call<NaaccrDataItem> getDataItem(@Path("naaccrVersion") String naaccrVersion, @Path("xmlIdOrNumber") String xmlIdOrNumber);
 
-    @GET("data_item/{xmlId}/history")
-    Call<ItemHistoryResults> getItemHistory(@Path("xmlId") String xmlId, @Query("attribute") String attribute);
+    @GET("data_item/operation_history/{naaccrVersion}/{xmlIdOrNumber}")
+    Call<ItemChangelogResults> getItemChangelog(@Path("naaccrVersion") String naaccrVersion, @Path("xmlIdOrNumber") String xmlIdOrNumber);
+
+    @GET("data_item/{xmlIdOrNumber}/history")
+    Call<ItemHistoryResults> getItemHistory(@Path("xmlIdOrNumber") String xmlIdOrNumber, @Query("attribute") String attribute);
 
 }

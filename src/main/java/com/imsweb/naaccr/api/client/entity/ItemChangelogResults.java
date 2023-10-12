@@ -7,14 +7,13 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SuppressWarnings("unused")
-public class ItemHistoryResults {
+public class ItemChangelogResults {
 
     @JsonProperty("count")
     private Integer _count;
 
     @JsonProperty("results")
-    private List<ItemHistory> _results;
+    private List<ItemChangelog> _results;
 
     public Integer getCount() {
         return _count;
@@ -24,11 +23,11 @@ public class ItemHistoryResults {
         _count = count;
     }
 
-    public List<ItemHistory> getResults() {
+    public List<ItemChangelog> getResults() {
         return _results;
     }
 
-    public void setResults(List<ItemHistory> results) {
+    public void setResults(List<ItemChangelog> results) {
         _results = results;
     }
 }

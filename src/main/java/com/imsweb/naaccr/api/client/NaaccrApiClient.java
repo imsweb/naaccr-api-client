@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
@@ -24,6 +23,8 @@ import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import com.imsweb.naaccr.api.client.entity.ItemChangelog;
+import com.imsweb.naaccr.api.client.entity.ItemChangelogResults;
 import com.imsweb.naaccr.api.client.entity.ItemHistory;
 import com.imsweb.naaccr.api.client.entity.ItemHistoryResults;
 import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
@@ -47,36 +48,33 @@ public final class NaaccrApiClient {
     // latest NAACCR version
     public static final String NAACCR_LATEST = NAACCR_24;
 
-    // list of all the supported NAACCR versions
-    public static final List<String> NAACCR_VERSIONS = Arrays.asList(NAACCR_24, NAACCR_23, NAACCR_22, NAACCR_21);
-
     public enum NaaccrItemAttribute {
         ITEM_NAME("ItemName"),
-        ITEM_LENGTH("ItemLength");
-        // TODO FD add other attributes
-
-        //        ItemName
-        //                ItemLength
-        //        ImplementedYear
-        //                ImplementedVersion
-        //        RetiredYear
-        //                Section
-        //        SourceOfStandard
-        //                DateCreated
-        //        DateModified
-        //                Description
-        //        Rationale
-        //                Clarification
-        //        GeneralNotes
-        //                CollectionStatusNpcr
-        //        CollectionStatusCoc
-        //                CollectionStatusSeer
-        //        CollectionStatusCccr
-        //                Format
-        //        CodeHeading
-        //                CodeNote
-        //        ItemDataType
-        //                AllowableValues
+        ITEM_NUMBER("ItemNumber"),
+        ITEM_LENGTH("ItemLength"),
+        ITEM_DATA_TYPE("ItemDataType"),
+        XML_NAACCR_ID("XmlNaaccrId"),
+        XML_PARENT_ID("XmlParentId"),
+        RECORD_TYPES("RecordTypes"),
+        ALLOWABLE_VALUES("AllowableValues"),
+        YEAR_IMPLEMENTED("YearImplemented"),
+        VERSION_IMPLEMENTED("VersionImplemented"),
+        YEAR_RETIRED("YearRetired"),
+        VERSION_RETIRED("VersionRetired"),
+        SECTION("Section"),
+        SOURCE_OF_STANDARD("SourceOfStandard"),
+        DESCRIPTION("Description"),
+        RATIONALE("Rationale"),
+        CLARIFICATION("Clarification"),
+        GENERAL_NOTES("GeneralNotes"),
+        COLLECTION_STATUS_NPCR("NpcrCollect"),
+        COLLECTION_STATUS_COC("CocCollect"),
+        COLLECTION_STATUS_SEER("SeerCollect"),
+        FORMAT("Format"),
+        CODE_HEADING("CodeHeading"),
+        CODE_NOTE("CodeNote"),
+        ALTERNATE_NAMES("AlternateNames"),
+        ALLOWED_CODES("AllowedCodes");
 
         private final String _name;
 
@@ -166,21 +164,10 @@ public final class NaaccrApiClient {
         return results.stream().sorted(Comparator.comparing(NaaccrVersion::getVersion)).collect(Collectors.toList());
     }
 
-    /**
-     * Returns the requested data item.
-     * @param naaccrVersion NAACCR version
-     * @param xmlId data item XML ID
-     * @return the requested data item
-     * @throws IOException if the call could not complete successfully
-     */
-    public NaaccrDataItem getDataItem(String naaccrVersion, String xmlId) throws IOException {
-        return _service.getDataItem(naaccrVersion, xmlId).execute().body();
-    }
-
     public List<NaaccrDataItem> getDataItems(String naaccrVersion) throws IOException {
         List<NaaccrDataItem> items = new ArrayList<>();
 
-        SearchResults results = _service.getDataItems(naaccrVersion, null, null).execute().body();
+        SearchResults results = _service.getDataItems(naaccrVersion, null).execute().body();
         if (results == null)
             throw new IOException("Got no results");
         if (results.getResults() != null && !results.getResults().isEmpty()) {
@@ -191,7 +178,7 @@ public final class NaaccrApiClient {
         int count = results.getCount();
         int page = 2;
         while (items.size() < count) {
-            results = _service.getDataItems(naaccrVersion, null, page++).execute().body();
+            results = _service.getDataItems(naaccrVersion, page++).execute().body();
             if (results == null || results.getResults() == null || results.getResults().isEmpty())
                 break;
             items.addAll(results.getResults());
@@ -200,10 +187,60 @@ public final class NaaccrApiClient {
         return items;
     }
 
-    //    public List<NaaccrDataItem> searchDataItems(String naaccrVersion, String search) throws IOException {
-    //        return _service.getDataItems(naaccrVersion, search).execute().body();
-    //    }
+    /**
+     * Returns the requested data item.
+     * @param naaccrVersion NAACCR version
+     * @param xmlId data item XML ID
+     * @return the requested data item, never null
+     * @throws IOException if the call could not complete successfully or the item was not found
+     */
+    public NaaccrDataItem getDataItem(String naaccrVersion, String xmlId) throws IOException {
+        return _service.getDataItem(naaccrVersion, xmlId).execute().body();
+    }
 
+    /**
+     * Returns the requested data item.
+     * @param naaccrVersion NAACCR version
+     * @param itemNumber data item number
+     * @return the requested data item, never null
+     * @throws IOException if the call could not complete successfully or the item was not found
+     */
+    public NaaccrDataItem getDataItem(String naaccrVersion, Integer itemNumber) throws IOException {
+        return getDataItem(naaccrVersion, itemNumber == null ? "" : itemNumber.toString());
+    }
+
+    /**
+     * Returns the changelog within a given NAACCR version for all the attributes of a given item.
+     * @param naaccrVersion NAACCR version
+     * @param xmlId data item XML ID
+     * @return the list of changelog entries, never null
+     * @throws IOException if the call could not complete successfully
+     */
+    public List<ItemChangelog> getItemChangelog(String naaccrVersion, String xmlId) throws IOException {
+        ItemChangelogResults results = _service.getItemChangelog(naaccrVersion, xmlId).execute().body();
+        if (results == null)
+            throw new IOException("Unable to get changelog, got null results");
+        return results.getResults().stream().sorted(Comparator.comparing(ItemChangelog::getModifiedAttribute)).collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the changelog within a given NAACCR version for all the attributes of a given item.
+     * @param naaccrVersion NAACCR version
+     * @param itemNumber data item number
+     * @return the list of changelog entries, never null
+     * @throws IOException if the call could not complete successfully
+     */
+    public List<ItemChangelog> getItemChangelog(String naaccrVersion, Integer itemNumber) throws IOException {
+        return getItemChangelog(naaccrVersion, itemNumber == null ? "" : itemNumber.toString());
+    }
+
+    /**
+     * Returns the history across NAACCR versions for the requested attribute and item.
+     * @param xmlId data item XML ID
+     * @param attribute item attribute (name, length, etc...)
+     * @return the list of history entries, never null
+     * @throws IOException if the call could not complete successfully
+     */
     public List<ItemHistory> getItemHistory(String xmlId, NaaccrItemAttribute attribute) throws IOException {
         ItemHistoryResults results = _service.getItemHistory(xmlId, attribute.getName()).execute().body();
         if (results == null)
@@ -211,6 +248,20 @@ public final class NaaccrApiClient {
         return results.getResults().stream().sorted(Comparator.comparing(ItemHistory::getNaaccrVersion)).collect(Collectors.toList());
     }
 
+    /**
+     * Returns the history across NAACCR versions for the requested attribute and item.
+     * @param itemNumber data item number
+     * @param attribute item attribute (name, length, etc...)
+     * @return the list of history entries, never null
+     * @throws IOException if the call could not complete successfully
+     */
+    public List<ItemHistory> getItemHistory(Integer itemNumber, NaaccrItemAttribute attribute) throws IOException {
+        return getItemHistory(itemNumber == null ? "" : itemNumber.toString(), attribute);
+    }
+
+    /**
+     * Use this class to build a new NAACCR API client object.
+     */
     public static class Builder {
 
         private String _url;

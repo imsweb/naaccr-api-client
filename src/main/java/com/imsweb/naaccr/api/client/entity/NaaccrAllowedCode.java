@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Allowed code for a given data item.
  */
+@SuppressWarnings("unused")
 public class NaaccrAllowedCode {
 
     @JsonProperty("Code")

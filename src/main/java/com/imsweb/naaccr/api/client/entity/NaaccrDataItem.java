@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Data items returned by the API.
  */
+@SuppressWarnings("unused")
 public final class NaaccrDataItem {
 
     @JsonProperty("ItemName")
@@ -44,17 +45,14 @@ public final class NaaccrDataItem {
     @JsonProperty("DateModified")
     private Date _dateModified;
 
-    @JsonProperty("NpcrCollected")
-    private String _npcrCollected;
+    @JsonProperty("NpcrCollect")
+    private String _npcrCollect;
 
-    @JsonProperty("CocCollected")
-    private String _cocCollected;
+    @JsonProperty("CocCollect")
+    private String _cocCollect;
 
-    @JsonProperty("SeerCollected")
-    private String _seerCollected;
-
-    @JsonProperty("CccrCollected")
-    private String _cccrCollected;
+    @JsonProperty("SeerCollect")
+    private String _seerCollect;
 
     @JsonProperty("AlternateNames")
     List<String> _alternateNames;
@@ -186,36 +184,28 @@ public final class NaaccrDataItem {
         _dateModified = dateModified;
     }
 
-    public String getNpcrCollected() {
-        return _npcrCollected;
+    public String getNpcrCollect() {
+        return _npcrCollect;
     }
 
-    public void setNpcrCollected(String npcrCollected) {
-        _npcrCollected = npcrCollected;
+    public void setNpcrCollect(String npcrCollect) {
+        _npcrCollect = npcrCollect;
     }
 
-    public String getCocCollected() {
-        return _cocCollected;
+    public String getCocCollect() {
+        return _cocCollect;
     }
 
-    public void setCocCollected(String cocCollected) {
-        _cocCollected = cocCollected;
+    public void setCocCollect(String cocCollect) {
+        _cocCollect = cocCollect;
     }
 
-    public String getSeerCollected() {
-        return _seerCollected;
+    public String getSeerCollect() {
+        return _seerCollect;
     }
 
-    public void setSeerCollected(String seerCollected) {
-        _seerCollected = seerCollected;
-    }
-
-    public String getCccrCollected() {
-        return _cccrCollected;
-    }
-
-    public void setCccrCollected(String cccrCollected) {
-        _cccrCollected = cccrCollected;
+    public void setSeerCollect(String seerCollect) {
+        _seerCollect = seerCollect;
     }
 
     public List<String> getAlternateNames() {

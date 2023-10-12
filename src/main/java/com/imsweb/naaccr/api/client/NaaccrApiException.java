@@ -14,6 +14,7 @@ public class NaaccrApiException extends IOException {
         _code = code;
     }
 
+    @SuppressWarnings("unused")
     public Integer getCode() {
         return _code;
     }

@@ -14,6 +14,7 @@ public class ErrorResponse {
         return _message;
     }
 
+    @SuppressWarnings("unused")
     public void setMessage(String message) {
         _message = message;
     }

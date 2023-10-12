@@ -5,6 +5,7 @@ package com.imsweb.naaccr.api.client.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@SuppressWarnings("unused")
 public class ItemHistory {
 
     @JsonProperty("NaaccrVersion")
