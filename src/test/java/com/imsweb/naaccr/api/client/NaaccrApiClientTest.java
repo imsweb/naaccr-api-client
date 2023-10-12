@@ -170,5 +170,4 @@ public class NaaccrApiClientTest {
         // get getting the history by item number
         Assert.assertFalse(client.getItemHistory(285, NaaccrItemAttribute.ITEM_NAME).isEmpty());
     }
-
 }
