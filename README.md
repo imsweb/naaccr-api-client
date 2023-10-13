@@ -1,7 +1,6 @@
 # NAACCR API Client
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=imsweb_naaccr-api-client&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=imsweb_naaccr-api-client)
-[![integration](https://github.com/imsweb/naaccr-api-client/workflows/integration/badge.svg)](https://github.com/imsweb/naaccr-api-client/actions)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.imsweb/naaccr-api-client/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.imsweb/naaccr-api-client)
 
 This library allows to call the NAACCR API using Java DTOs.
