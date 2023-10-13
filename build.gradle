@@ -164,7 +164,7 @@ publishing {
 
 // setup JAR signing
 signing {
-    required { !version.endsWith('-SNAPSHOT') }
+    required { !project.version.endsWith('-SNAPSHOT') }
 
     String signingKey = project.findProperty('signing.armored.key') ?: ''
     String signingPassword = project.findProperty('signing.armored.password') ?: ''
