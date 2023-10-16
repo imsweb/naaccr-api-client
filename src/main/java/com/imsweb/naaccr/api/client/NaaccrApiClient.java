@@ -170,9 +170,8 @@ public final class NaaccrApiClient {
         SearchResults results = _service.getDataItems(naaccrVersion, null).execute().body();
         if (results == null)
             throw new IOException("Got no results");
-        if (results.getResults() != null && !results.getResults().isEmpty()) {
+        if (results.getResults() != null && !results.getResults().isEmpty())
             items.addAll(results.getResults());
-        }
         if (results.getCount() == null)
             throw new IOException("Was expecting a count in the results but didn't get it");
         int count = results.getCount();
