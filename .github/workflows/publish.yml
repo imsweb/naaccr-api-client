@@ -2,7 +2,11 @@
 
 name: publish
 
-on: workflow_dispatch
+on:
+  repository_dispatch:
+    types: manual-publish
+  release:
+    types: [ created ]
 
 jobs:
   publish:
