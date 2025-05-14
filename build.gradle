@@ -1,16 +1,14 @@
-import java.time.Duration
+import com.vanniktech.maven.publish.*
 
 plugins {
     id 'java-library'
     id 'checkstyle'
     id 'jacoco'
-    id 'com.github.spotbugs' version '6.0.26'
-    id 'maven-publish'
-    id 'signing'
-    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0' // publish to Maven Central
-    id 'com.github.ben-manes.versions' version '0.51.0' // check for out-of-date dependencies (run 'dependencyUpdates' manually)
-    id 'org.sonatype.gradle.plugins.scan' version '2.8.3' // scan for vulnerabilities
-    id 'org.sonarqube' version '5.1.0.4882' // sonarQube analysis
+    id 'com.vanniktech.maven.publish' version '0.32.0' // publish to Maven Central
+    id 'com.github.ben-manes.versions' version '0.52.0' // check for out-of-date dependencies (run 'dependencyUpdates' manually)
+    id 'com.github.spotbugs' version '6.1.11' // spotbugs code analysis
+    id 'org.sonatype.gradle.plugins.scan' version '3.1.1' // scan for vulnerabilities
+    id 'org.sonarqube' version '6.1.0.5360' // sonarQube analysis
 }
 
 group = 'com.imsweb'
@@ -33,36 +31,32 @@ dependencies {
 
     // retrofit will not update these dependencies to fix vulnerabilities
     api 'com.squareup.okhttp3:okhttp:4.12.0'
-    api 'com.squareup.okio:okio:3.9.1'
+    api 'com.squareup.okio:okio:3.11.0'
 
     // newer version of dependency to fix vulnerability until converter-jackson is updated
-    api 'com.fasterxml.jackson.core:jackson-databind:2.18.1'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'com.imsweb:seerutils:5.6'
 }
 
-// enforce UTF-8, display the compilation warnings
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation' << '-Xlint:rawtypes' << '-Werror'
-}
-
-// the Javadoc was made way too strict in Java 8 and it's not worth the time fixing everything!
-tasks.withType(Javadoc).configureEach {
-    options.addStringOption('Xdoclint:none', '-quiet')
-}
-
-// generate javadoc and sources (required by Nexus)
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-
-    withJavadocJar()
-    withSourcesJar()
 }
 
-// customize the manifest
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption('encoding', 'UTF-8')
+    options.addStringOption('charSet', 'UTF-8')
+    options.addBooleanOption('html5', true)
+}
+
 jar {
     manifest {
         attributes('Implementation-Title': project.name,
@@ -84,14 +78,12 @@ ossIndexAudit {
 }
 check.dependsOn 'ossIndexAudit'
 
-// checkstyle plugin settings
 checkstyle {
     ignoreFailures = true
     configFile = project(':').file('config/checkstyle/checkstyle.xml')
     configProperties = ['suppressionFile': project(':').file('config/checkstyle/suppressions.xml')]
 }
 
-// jacoco plugin settings
 jacocoTestReport {
     reports {
         xml.required = true
@@ -99,7 +91,6 @@ jacocoTestReport {
 }
 test.finalizedBy jacocoTestReport
 
-// spotbugs plugin settings
 spotbugs {
     ignoreFailures = true
     excludeFilter.set(project(':').file("config/spotbugs/spotbugs-exclude.xml"))
@@ -128,87 +119,46 @@ tasks.named("dependencyUpdates").configure {
     }
 }
 
-// needed to deploy to Maven Central
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = 'naaccr-api-client'
-            from components.java
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
-            pom {
-                name = 'NAACCR API Client'
-                description = 'Wraps calls to the NAACCR API.'
-                url = 'https://github.com/imsweb/naaccr-api-client'
-                inceptionYear = '2023'
+// needed to deploy to Maven Central Portal
+mavenPublishing {
+    configure(new JavaLibrary(new JavadocJar.Javadoc(), true))
 
-                licenses {
-                    license {
-                        name = 'A modified BSD License (BSD)'
-                        url = 'https://github.com/imsweb/layout/blob/master/LICENSE'
-                        distribution = 'repo'
-                    }
-                }
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, true)
+    signAllPublications()
 
-                developers {
-                    developer {
-                        id = 'depryf'
-                        name = 'Fabian Depry'
-                        email = 'depryf@imsweb.com'
-                    }
-                }
+    pom {
+        name = 'NAACCR API Client'
+        description = 'Wraps calls to the NAACCR API.'
+        url = 'https://github.com/imsweb/naaccr-api-client'
+        inceptionYear = '2023'
 
-                scm {
-                    url = 'https://github.com/imsweb/naaccr-api-client'
-                    connection = 'scm:https://github.com/imsweb/naaccr-api-client.git'
-                    developerConnection = 'scm:git@github.com:imsweb/naaccr-api-client.git'
-                }
+        licenses {
+            license {
+                name = 'A modified BSD License (BSD)'
+                url = 'https://github.com/imsweb/layout/blob/master/LICENSE'
+                distribution = 'repo'
             }
         }
-    }
-}
 
-// setup JAR signing
-signing {
-    required { !project.version.endsWith('-SNAPSHOT') }
-
-    String signingKey = project.findProperty('signingKey') ?: ''
-    String signingPassword = project.findProperty('signingPassword') ?: ''
-
-    useInMemoryPgpKeys(signingKey, signingPassword)
-
-    sign publishing.publications.mavenJava
-}
-
-// needed to release on maven central
-nexusPublishing {
-    repositories {
-        sonatype {
-            stagingProfileId = '63e5ddd3ab0d16'
-
-            username = project.findProperty("nexusUsername")
-            password = project.findProperty("nexusPassword")
+        developers {
+            developer {
+                id = 'depryf'
+                name = 'Fabian Depry'
+                email = 'depryf@imsweb.com'
+            }
         }
-    }
 
-    clientTimeout = Duration.ofSeconds(300)
-    connectTimeout = Duration.ofSeconds(60)
-
-    transitionCheckOptions {
-        maxRetries.set(50)
-        delayBetween.set(Duration.ofMillis(5000))
+        scm {
+            url = 'https://github.com/imsweb/naaccr-api-client'
+            connection = 'scm:https://github.com/imsweb/naaccr-api-client.git'
+            developerConnection = 'scm:git@github.com:imsweb/naaccr-api-client.git'
+        }
     }
 }
 
 // Gradle wrapper, this allows to build the project without having to install Gradle!
 wrapper {
-    gradleVersion = '8.11'
+    gradleVersion = '8.14'
     distributionType = Wrapper.DistributionType.ALL
 }
 
