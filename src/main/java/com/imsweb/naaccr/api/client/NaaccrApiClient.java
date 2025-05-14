@@ -40,13 +40,14 @@ public final class NaaccrApiClient {
     public static final String NAACCR_API_VERSION = "1.0";
 
     // constants for the NAACCR versions
+    public static final String NAACCR_25 = "25";
     public static final String NAACCR_24 = "24";
     public static final String NAACCR_23 = "23";
     public static final String NAACCR_22 = "22";
     public static final String NAACCR_21 = "21";
 
     // latest NAACCR version
-    public static final String NAACCR_LATEST = NAACCR_24;
+    public static final String NAACCR_LATEST = NAACCR_25;
 
     public enum NaaccrItemAttribute {
         ITEM_NAME("ItemName"),
