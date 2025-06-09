@@ -127,7 +127,7 @@ public final class NaaccrApiClient {
      * Creates a client API root object
      * @param baseUrl base URL for API
      */
-    private NaaccrApiClient(String baseUrl, String apiVersion) {
+    private NaaccrApiClient(String baseUrl, String apiVersion, String authorization) {
 
         if (!baseUrl.endsWith("/"))
             baseUrl += "/";
@@ -136,14 +136,12 @@ public final class NaaccrApiClient {
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(chain -> {
                     Request original = chain.request();
-
-                    // add the api key to all requests
-                    Request request = original.newBuilder()
-                            .header("Accept", "application/json")
-                            .method(original.method(), original.body())
-                            .build();
-
-                    return chain.proceed(request);
+                    Request.Builder requestBuilder = original.newBuilder();
+                    requestBuilder.addHeader("Accept", "application/json");
+                    if (authorization != null)
+                        requestBuilder.addHeader("Authorization", authorization);
+                    requestBuilder.method(original.method(), original.body());
+                    return chain.proceed(requestBuilder.build());
                 })
                 .addInterceptor(new ErrorInterceptor())
                 .build();
@@ -268,6 +266,8 @@ public final class NaaccrApiClient {
 
         private String _version;
 
+        private String _authorization;
+
         /**
          * Return a list of user properties from the local .naaccr-api-client file
          * @return Properties object
@@ -307,6 +307,10 @@ public final class NaaccrApiClient {
                 _version = System.getenv("NAACCR_API_CLIENT_VERSION");
             if (_version == null)
                 _version = NAACCR_API_VERSION;
+
+            _authorization = props.getProperty("authorization");
+            if (_authorization == null)
+                _authorization = System.getenv("NAACCR_API_CLIENT_AUTHORIZATION");
         }
 
         public Builder url(String url) {
@@ -320,7 +324,7 @@ public final class NaaccrApiClient {
         }
 
         public NaaccrApiClient connect() {
-            return new NaaccrApiClient(_url, _version);
+            return new NaaccrApiClient(_url, _version, _authorization);
         }
     }
 
