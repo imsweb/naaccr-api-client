@@ -27,16 +27,12 @@ public class ErrorInterceptor implements Interceptor {
             String message;
 
             ResponseBody body = response.body();
-            if (body != null) {
-                try {
-                    message = new ObjectMapper().readValue(body.byteStream(), ErrorResponse.class).getMessage();
-                }
-                catch (IOException e) {
-                    message = body.string();
-                }
+            try {
+                message = new ObjectMapper().readValue(body.byteStream(), ErrorResponse.class).getMessage();
             }
-            else
-                message = "Error code " + response.code();
+            catch (IOException e) {
+                message = body.string();
+            }
 
             throw new NaaccrApiException(response.code(), message);
         }

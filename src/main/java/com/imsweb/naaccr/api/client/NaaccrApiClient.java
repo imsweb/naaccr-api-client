@@ -40,6 +40,7 @@ public final class NaaccrApiClient {
     public static final String NAACCR_API_VERSION = "1.0";
 
     // constants for the NAACCR versions
+    public static final String NAACCR_26 = "26";
     public static final String NAACCR_25 = "25";
     public static final String NAACCR_24 = "24";
     public static final String NAACCR_23 = "23";
@@ -47,7 +48,7 @@ public final class NaaccrApiClient {
     public static final String NAACCR_21 = "21";
 
     // latest NAACCR version
-    public static final String NAACCR_LATEST = NAACCR_25;
+    public static final String NAACCR_LATEST = NAACCR_26;
 
     public enum NaaccrItemAttribute {
         ITEM_NAME("ItemName"),
@@ -112,7 +113,7 @@ public final class NaaccrApiClient {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         // do not write null values
-        mapper.setSerializationInclusion(Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(Include.NON_NULL);
 
         // annotations are set on the fields (not the getters/setters)
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);

@@ -25,6 +25,8 @@ import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_21;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_22;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_23;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_24;
+import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_25;
+import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_26;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_API_URL;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_API_VERSION;
 import static com.imsweb.naaccr.api.client.NaaccrApiClient.NAACCR_LATEST;
@@ -45,6 +47,13 @@ public class NaaccrApiClientTest {
         Assert.assertTrue(versions.toString(), versions.contains("21"));
         for (String v : versions)
             Assert.assertTrue(v, v.matches("\\d{2}"));
+
+        Assert.assertTrue(versions.contains(NAACCR_21));
+        Assert.assertTrue(versions.contains(NAACCR_22));
+        Assert.assertTrue(versions.contains(NAACCR_23));
+        Assert.assertTrue(versions.contains(NAACCR_24));
+        Assert.assertTrue(versions.contains(NAACCR_25));
+        Assert.assertTrue(versions.contains(NAACCR_26));
     }
 
     @Test
@@ -78,8 +87,8 @@ public class NaaccrApiClientTest {
         List<NaaccrAllowedCode> codes = item.getAllowedCodes();
         Assert.assertNotNull(codes);
         Assert.assertFalse(codes.isEmpty());
-        Assert.assertEquals("000", codes.get(0).getCode());
-        Assert.assertEquals("Less than 1 year old; diagnosed in utero", codes.get(0).getDescription());
+        Assert.assertEquals("000", codes.getFirst().getCode());
+        Assert.assertEquals("Less than 1 year old; diagnosed in utero", codes.getFirst().getDescription());
 
         // a recently added item
         item = client.getDataItem(NAACCR_23, "noPatientContactFlag");
@@ -147,8 +156,8 @@ public class NaaccrApiClientTest {
 
         List<ItemChangelog> changelogs = client.getItemChangelog(NAACCR_23, "race1");
         Assert.assertEquals(2, changelogs.size());
-        Assert.assertEquals("Modification", changelogs.get(0).getOperation());
-        Assert.assertEquals("AllowedCodes", changelogs.get(0).getModifiedAttribute());
+        Assert.assertEquals("Modification", changelogs.getFirst().getOperation());
+        Assert.assertEquals("AllowedCodes", changelogs.getFirst().getModifiedAttribute());
         Assert.assertNotNull(changelogs.get(0).getOldValue());
         Assert.assertNotNull(changelogs.get(0).getNewValue());
         Assert.assertEquals("Modification", changelogs.get(1).getOperation());
