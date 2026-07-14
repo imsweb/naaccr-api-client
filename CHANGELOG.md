@@ -3,7 +3,6 @@
 **Changes in version 1.5**
 
 - Added constant for NAACCR 27.
-- Changed latest version to NAACCR 27.
 - Updated dependencies.
 
 **Changes in version 1.4**

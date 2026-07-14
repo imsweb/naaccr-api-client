@@ -31,6 +31,7 @@ import com.imsweb.naaccr.api.client.entity.NaaccrDataItem;
 import com.imsweb.naaccr.api.client.entity.NaaccrVersion;
 import com.imsweb.naaccr.api.client.entity.SearchResults;
 
+@SuppressWarnings("unused")
 public final class NaaccrApiClient {
 
     // default base URL
@@ -48,8 +49,8 @@ public final class NaaccrApiClient {
     public static final String NAACCR_22 = "22";
     public static final String NAACCR_21 = "21";
 
-    // latest NAACCR version
-    public static final String NAACCR_LATEST = NAACCR_27;
+    // latest (published) NAACCR version
+    public static final String NAACCR_LATEST = NAACCR_26;
 
     public enum NaaccrItemAttribute {
         ITEM_NAME("ItemName"),
