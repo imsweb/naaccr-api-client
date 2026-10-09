@@ -4,9 +4,9 @@ plugins {
     id 'java-library'
     id 'jacoco'
     id 'com.vanniktech.maven.publish' version '0.37.0' // publish to Maven Central
-    id 'com.github.ben-manes.versions' version '0.54.0' // check for out-of-date dependencies (run 'dependencyUpdates' manually)
-    id 'com.github.spotbugs' version '6.5.9' // spotbugs code analysis
-    id 'org.sonarqube' version '7.3.1.8318' // sonarQube analysis
+    id 'com.github.ben-manes.versions' version '0.65.0' // check for out-of-date dependencies (run 'dependencyUpdates' manually)
+    id 'com.github.spotbugs' version '6.5.12' // spotbugs code analysis
+    id 'org.sonarqube' version '7.5.0.8588' // sonarQube analysis
 }
 
 group = 'com.imsweb'
@@ -28,11 +28,11 @@ dependencies {
     api 'com.squareup.retrofit2:converter-jackson:3.0.0'
 
     // retrofit will not update these dependencies to fix vulnerabilities
-    api 'com.squareup.okhttp3:okhttp:5.4.0'
-    api 'com.squareup.okio:okio:3.17.0'
+    api 'com.squareup.okhttp3:okhttp:5.5.0'
+    api 'com.squareup.okio:okio:3.18.2'
 
     // newer version of dependency to fix vulnerability until converter-jackson is updated
-    api 'com.fasterxml.jackson.core:jackson-databind:2.22.1'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.22.3'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'com.imsweb:seerutils:5.7'
@@ -143,7 +143,7 @@ mavenPublishing {
 
 // Gradle wrapper, this allows to build the project without having to install Gradle!
 wrapper {
-    gradleVersion = '9.6.1'
+    gradleVersion = '9.8.1'
     distributionType = Wrapper.DistributionType.ALL
 }
 
