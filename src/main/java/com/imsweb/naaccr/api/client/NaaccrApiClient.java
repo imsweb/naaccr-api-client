@@ -50,7 +50,7 @@ public final class NaaccrApiClient {
     public static final String NAACCR_21 = "21";
 
     // latest (published) NAACCR version
-    public static final String NAACCR_LATEST = NAACCR_26;
+    public static final String NAACCR_LATEST = NAACCR_27;
 
     public enum NaaccrItemAttribute {
         ITEM_NAME("ItemName"),

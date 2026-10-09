@@ -1,12 +1,9 @@
 ## NAACCR API Client Version History
 
-**Changes in version 1.6**
-
-- Updated dependencies.
 
 **Changes in version 1.5**
 
-- Added constant for NAACCR 27.
+- Added constant for NAACCR 27 and made that the latest version.
 - Updated dependencies.
 
 **Changes in version 1.4**

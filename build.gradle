@@ -6,7 +6,6 @@ plugins {
     id 'com.vanniktech.maven.publish' version '0.37.0' // publish to Maven Central
     id 'com.github.ben-manes.versions' version '0.65.0' // check for out-of-date dependencies (run 'dependencyUpdates' manually)
     id 'com.github.spotbugs' version '6.5.12' // spotbugs code analysis
-    id 'org.sonarqube' version '7.5.0.8588' // sonarQube analysis
 }
 
 group = 'com.imsweb'
@@ -79,16 +78,6 @@ test.finalizedBy jacocoTestReport
 spotbugs {
     ignoreFailures = true
     excludeFilter.set(file('config/spotbugs/spotbugs-exclude.xml'))
-}
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "imsweb_naaccr-api-client"
-        property "sonar.organization", "imsweb"
-        property "sonar.host.url", "https://sonarcloud.io"
-        property 'sonar.exclusions', '**/lab/*'
-        property 'sonar.coverage.exclusions', '**/lab/*,**/entity/*'
-    }
 }
 
 def isNonStable = { String version ->
